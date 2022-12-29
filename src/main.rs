@@ -72,6 +72,9 @@ async fn not_found_404() -> impl IntoResponse {
 // main application
 #[tokio::main]
 async fn main() -> Result<()> {
+    // initialize color_eyre for nice looking error messages
+    color_eyre::install()?;
+    
     // initialize tracing
     let subscriber = FmtSubscriber::builder()
         .with_max_level(Level::TRACE)
@@ -88,7 +91,8 @@ async fn main() -> Result<()> {
     let app = app.fallback(not_found_404);
 
     // spin up and listen on port 127.0.0.1:3000
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let port = 3000;
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
     info!("listening on port: {}", addr);
 
     axum::Server::bind(&addr)
