@@ -1,6 +1,7 @@
 // main.rs
 // This is a bare-bones starter for an API using the Axum web framework
-// it has a single /health_check route
+// it has two routes: "/" - root route and "/health_check" - to return API status information
+// there is a fallback route, which serves up a 404 Not Found, for routes that don't exist yet
 
 // import dependencies
 use axum::{
@@ -13,7 +14,8 @@ use color_eyre::eyre::Result;
 use futures::future::pending;
 use std::net::SocketAddr;
 use tokio::signal;
-use tracing::Level;
+use tracing::subscriber::set_global_default;
+use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
 
 // function to handle graceful shutdown on ctl-c
@@ -43,6 +45,7 @@ async fn shutdown_signal() {
     }
 }
 
+// handler function for the "/" root route
 async fn root() -> impl IntoResponse {
     (
         StatusCode::OK,
@@ -58,7 +61,7 @@ async fn health_check() -> impl IntoResponse {
     )
 }
 
-// handler function for any other route than root or /health_check
+// handler function for non existent routes, returns a 404 Not Found
 async fn not_found_404() -> impl IntoResponse {
     (
         StatusCode::NOT_FOUND,
@@ -73,7 +76,7 @@ async fn main() -> Result<()> {
     let subscriber = FmtSubscriber::builder()
         .with_max_level(Level::TRACE)
         .finish();
-    tracing::subscriber::set_global_default(subscriber).expect("Setting default subscriber failed");
+    set_global_default(subscriber)?;
 
     // routes for our core API application
     let app = Router::new()
@@ -86,7 +89,7 @@ async fn main() -> Result<()> {
 
     // spin up and listen on port 127.0.0.1:3000
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    tracing::info!("listening on port: {}", addr);
+    info!("listening on port: {}", addr);
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
